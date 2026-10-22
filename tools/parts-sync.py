@@ -5,7 +5,7 @@
   parts-sync.py [MANIFEST] [--json]
 
 Files without a sha256 in the manifest are downloaded and their hash is printed, so it can be
-recorded. Exit code: 0 all verified, 1 a hash mismatch or download failure.
+recorded. Entries with an empty url (no public file) are reported as "no-public-file". Exit code: 0 all verified, 1 a hash mismatch or download failure.
 """
 import hashlib, json, os, re, sys, tomllib, urllib.request
 
@@ -18,6 +18,8 @@ def main(argv):
     cache = os.path.join(os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache")), "opendap", "parts")
     results, ok = [], True
     for f in files:
+        if not f.get("url"):
+            results.append({"mpn": f["mpn"], "kind": f["kind"], "status": "no-public-file"}); continue
         slug = lambda s: re.sub(r"[^A-Za-z0-9._-]+", "-", s)
         d = os.path.join(cache, slug(f["manufacturer"]), slug(f["mpn"]))
         os.makedirs(d, exist_ok=True)
@@ -41,7 +43,7 @@ def main(argv):
         print(json.dumps({"schema": "opendap.parts-sync/v1", "items": results}))
     else:
         for r in results:
-            print(f"{r['status']:13} {r['mpn']:28} {r['kind']:10} {r.get('sha256', r.get('error', ''))}")
+            print(f"{r['status']:15} {r['mpn']:28} {r['kind']:10} {r.get('sha256', r.get('error', ''))}")
     return 0 if ok else 1
 
 if __name__ == "__main__":
