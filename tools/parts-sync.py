@@ -5,7 +5,8 @@
   parts-sync.py [MANIFEST] [--json]
 
 Files without a sha256 in the manifest are downloaded and their hash is printed, so it can be
-recorded. Entries with an empty url (no public file) are reported as "no-public-file". Exit code: 0 all verified, 1 a hash mismatch or download failure.
+recorded. Empty downloads, and datasheets that are not PDFs (a blocked or moved page), are
+deleted and reported as errors. Entries with an empty url (no public file) are reported as "no-public-file". Exit code: 0 all verified, 1 a hash mismatch or download failure.
 """
 import hashlib, json, os, re, sys, tomllib, urllib.request
 
@@ -34,7 +35,11 @@ def main(argv):
                 status = "downloaded"
             except Exception as e:
                 ok = False; results.append({"mpn": f["mpn"], "kind": f["kind"], "status": "error", "error": str(e)}); continue
-        digest = hashlib.sha256(open(path, "rb").read()).hexdigest()
+        data = open(path, "rb").read()
+        if not data or (f["kind"] == "datasheet" and not data.startswith(b"%PDF-")):
+            os.remove(path); ok = False
+            results.append({"mpn": f["mpn"], "kind": f["kind"], "status": "error", "error": "empty or not a PDF (blocked or moved page)"}); continue
+        digest = hashlib.sha256(data).hexdigest()
         want = f.get("sha256")
         if want and want != digest:
             ok = False; status = "hash-mismatch"
