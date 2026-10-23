@@ -1,7 +1,7 @@
 # OpenDAP: co-design workflow across electronics, mechanics, firmware, software and OS
 
 - **Date:** 2026-10-21
-- **Scope:** how to keep the ~26 OpenDAP repositories (board, case, faceplates, hat-standard, HATs, system, blackbird-os, toolkit, ui-components) consistent while each domain evolves on its own; which tools and processes support that.
+- **Scope:** how to keep the ~26 OpenDAP repositories (board, case, faceplates, hat-standard, HATs, system, blackbird-os, toolkit, blackbird-ui) consistent while each domain evolves on its own; which tools and processes support that.
 - **Status:** desk research. Nothing here is a decision. Section 8 contains **recommendations** for the maintainers to accept, change or reject (as ADRs in the relevant repositories).
 - **Convention:** **UNVERIFIED** = no primary source found, or the claim comes from general knowledge and was not re-checked today. **(secondary source)** = only press, forum or blog coverage. Versions were read on 2026-10-21 from PyPI JSON, GitHub releases/tags, kernel.org `releases.json` or `git ls-remote`, unless stated otherwise.
 
