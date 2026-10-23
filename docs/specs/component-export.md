@@ -22,7 +22,7 @@ Composition is hierarchical, and not only at the top: any component may consume 
 | Electronics | KiCad | STEP of the assembled PCB, connector netlist, interface definition | System-level connectivity checks across connectors |
 | Signal paths | Simulations | Touchstone (`.sNp`) model of the component's segment of each high-speed channel | Cascading segments into a full channel model |
 | Power and thermal | Simulations | Dissipated power and simplified thermal geometry | Thermal simulation of the assembly |
-| Firmware | Rust | Versioned binaries | OpenDAP OS image |
-| Software and OS | Rust, overlays | Crates, OpenDAP OS packages, device tree overlays | OpenDAP OS image composition |
+| Firmware | Rust | Versioned binaries | Blackbird OS image |
+| Software and OS | Rust, overlays | Crates, Blackbird OS packages, device tree overlays | Blackbird OS image composition |
 
 The exact `component.yaml` schema is not defined yet.

@@ -1,7 +1,7 @@
 # OpenDAP: co-design workflow across electronics, mechanics, firmware, software and OS
 
 - **Date:** 2026-10-21
-- **Scope:** how to keep the ~26 OpenDAP repositories (board, case, faceplates, hat-standard, HATs, system, opendap-os, toolkit, ui-components) consistent while each domain evolves on its own; which tools and processes support that.
+- **Scope:** how to keep the ~26 OpenDAP repositories (board, case, faceplates, hat-standard, HATs, system, blackbird-os, toolkit, ui-components) consistent while each domain evolves on its own; which tools and processes support that.
 - **Status:** desk research. Nothing here is a decision. Section 8 contains **recommendations** for the maintainers to accept, change or reject (as ADRs in the relevant repositories).
 - **Convention:** **UNVERIFIED** = no primary source found, or the claim comes from general knowledge and was not re-checked today. **(secondary source)** = only press, forum or blog coverage. Versions were read on 2026-10-21 from PyPI JSON, GitHub releases/tags, kernel.org `releases.json` or `git ls-remote`, unless stated otherwise.
 
@@ -34,7 +34,7 @@ One OpenDAP interface (e.g. board → HAT flat cable → device-side pogo piece)
 3. KiCad schematic of **each HAT** (seven repositories).
 4. **FreeCAD**: connector body positions, cable bend/slot, pogo pin field, screw anchors (`case`, `case/hat-case`, each `hat-*` case).
 5. **MCU firmware** pin configuration (Rust HAL) on the board and possibly on HATs.
-6. **Linux device tree**: board `.dts` (SoC pinmux, `gpio-line-names`, connector node) and per-HAT **overlays** (`opendap-os/overlays`).
+6. **Linux device tree**: board `.dts` (SoC pinmux, `gpio-line-names`, connector node) and per-HAT **overlays** (`blackbird-os/overlays`).
 7. **Documentation**: the human-readable spec (`hat-standard/spec`, `case/docs/specs/faceplate-interface.md`) and HAT developer docs.
 
 Any manual copy drifts. The goal is: **one file is edited by humans; everything else is generated from it or checked against it.**
@@ -94,7 +94,7 @@ Because BRD-001 rules out custom kernel builds, the whole board-support surface 
 - **Connector abstraction in DT.** The DT spec's *nexus node* / specifier-mapping mechanism (`gpio-map`, `gpio-map-mask`, `gpio-map-pass-thru`) lets an overlay reference "connector pin 7" instead of "gpio3 12". Zephyr uses it for `arduino-header-r3` so that shields work on any board ([Zephyr shields porting guide](https://docs.zephyrproject.org/latest/hardware/porting/shields.html)). Linux supports `gpio-map` in its GPIO core (UNVERIFIED for every consumer; well established for GPIO).
 - **BeagleBoard cape compatibility layer**: base DTs export indexed symbols (`bone_i2c_#`, `bone_spi_#`, `bone_pwm_#`) in `bbb-bone-buses.dtsi` etc., overlays use generic names (`BONE-I2C1`), and udev rules create `/dev/bone/i2c/1` that maps to I2C1 on Black, I2C5 on AI, MAIN_I2C6 on AI-64 ([cape interface spec](https://docs.beagleboard.org/boards/capes/cape-interface-spec.html)). This is the closest existing model for "one HAT overlay works across OpenDAP board revisions".
 - **Local overlay symbols for connectors.** Hervé Codina's `export-symbols` series (v1 Dec 2024, v2 Apr 2025, [LKML](https://lkml.iu.edu/hypermail/linux/kernel/2412.1/01636.html)) and his 77-patch RFC "dtb metadata and addon device-trees" (Jan 2026, [LKML](https://lkml.iu.edu/2601.1/04737.html)) target exactly the "base board + connector + add-on board" case (mikroBUS, Grove). **Mainline status in 7.3: UNVERIFIED — assume not available.**
-- **Runtime overlay loading**: mainline Linux has no generic userspace (configfs) interface to apply overlays; that interface remains out of tree (UNVERIFIED for 7.3, long-standing). Practical consequence: overlays for HATs/faceplates are applied **by the bootloader** (U-Boot `fdt apply`, U-Boot "extension board" detection — [Bootlin, 2021](https://bootlin.com/pub/conferences/2021/lee/maincent-devicetree-overlay-and-uboot-extension-board-management/maincent-devicetree-overlay-and-uboot-extension-board-management.pdf)) or by a mainline driver that applies its own overlay. HAT hot-plug is therefore an open architectural question for `hat-standard` + `opendap-os`, not a tooling detail.
+- **Runtime overlay loading**: mainline Linux has no generic userspace (configfs) interface to apply overlays; that interface remains out of tree (UNVERIFIED for 7.3, long-standing). Practical consequence: overlays for HATs/faceplates are applied **by the bootloader** (U-Boot `fdt apply`, U-Boot "extension board" detection — [Bootlin, 2021](https://bootlin.com/pub/conferences/2021/lee/maincent-devicetree-overlay-and-uboot-extension-board-management/maincent-devicetree-overlay-and-uboot-extension-board-management.pdf)) or by a mainline driver that applies its own overlay. HAT hot-plug is therefore an open architectural question for `hat-standard` + `blackbird-os`, not a tooling detail.
 - **`gpio-line-names`** expose meaningful names to userspace through the GPIO character device / libgpiod; the binding text recommends function names over `GPIO0`-style names ([LKML 2023 patch](https://lkml.iu.edu/hypermail/linux/kernel/2302.1/04065.html)). Generating `gpio-line-names` from the interface file gives `system` (Rust services) stable names across board revisions.
 - Kernel reference: mainline **7.3** released 2026-10-18; stable 7.2.12; longterm 6.18.58 ([kernel.org releases.json](https://www.kernel.org/releases.json)).
 
@@ -141,7 +141,7 @@ Because BRD-001 rules out custom kernel builds, the whole board-support surface 
 
 | Tool | Version | Relevant capability | Fit |
 |---|---|---|---|
-| **QEMU** | v11.1.2 (latest tag) | `imx8mp-evk` machine (4× A53, GICv3, UART, uSDHC, DesignWare PCIe, Ethernet, 2× DWC3 USB 3, GPIO, 6× I2C, SPI, watchdogs, SNVS RTC, clock tree), boots Linux with `-kernel` + `-dtb`; also `imx8mm-evk` ([docs](https://www.qemu.org/docs/master/system/arm/imx8mp-evk.html)) | If i.MX 8M Plus is chosen: boot OpenDAP OS images in CI, run `system` services, test DT-dependent userspace. No audio codec or display models (UNVERIFIED). Upstream merge ~QEMU 10.0 (2025, [patch series](https://patchew.org/QEMU/20250223114708.1780-1-shentey@gmail.com)). |
+| **QEMU** | v11.1.2 (latest tag) | `imx8mp-evk` machine (4× A53, GICv3, UART, uSDHC, DesignWare PCIe, Ethernet, 2× DWC3 USB 3, GPIO, 6× I2C, SPI, watchdogs, SNVS RTC, clock tree), boots Linux with `-kernel` + `-dtb`; also `imx8mm-evk` ([docs](https://www.qemu.org/docs/master/system/arm/imx8mp-evk.html)) | If i.MX 8M Plus is chosen: boot Blackbird OS images in CI, run `system` services, test DT-dependent userspace. No audio codec or display models (UNVERIFIED). Upstream merge ~QEMU 10.0 (2025, [patch series](https://patchew.org/QEMU/20250223114708.1780-1-shentey@gmail.com)). |
 | **Renode** ([GitHub](https://github.com/renode/renode)) | v1.17.0 (2026-09-07) | i.MX 8M Plus SoC + FRDM board descriptions, enough for U-Boot with MMC and Linux "with certain limitations" ([Antmicro, 2026-06](https://antmicro.com/blog/2026/06/renode-support-for-nxp-imx8m-plus)); multi-node, deterministic, models MCUs (STM32 families; RP2350 UNVERIFIED) and buses; Robot Framework tests | Co-simulate **SoC + supervisor MCU** over I²C/UART in one deterministic run — the closest open option to "board firmware + Linux talk to each other before hardware exists". Precursor used Renode for Xous CI ([Antmicro 2022](https://antmicro.com/blog/2022/03/precursor-developing-advanced-products-with-renode/), [xobs.io](https://xobs.io/precursor-and-renode/)). |
 | **dts2repl** ([GitHub](https://github.com/antmicro/dts2repl)) | Antmicro, maintained | DT → Renode `.repl` platform | Feeds Renode from the **same DT** the generator produces — closes the loop "interface file → DT → emulator". |
 | **cocotb** ([PyPI](https://pypi.org/project/cocotb/)) | 2.1.0 (2026-08-30) | HDL co-simulation | Only if a HAT carries an FPGA (oscilloscope/VNA HATs might). |
@@ -150,7 +150,7 @@ Because BRD-001 rules out custom kernel builds, the whole board-support surface 
 ### 3.2 Device tree validation (works now, no SoC model needed)
 
 - **dt-schema** ([PyPI dtschema](https://pypi.org/project/dtschema/)) **2026.9** (2026-09-18) provides `dt-validate`; the kernel's `make dtbs_check` runs it against `Documentation/devicetree/bindings` and also handles `.dtbo` ([scripts/Makefile.dtbs](https://gbmc.googlesource.com/linux/+/refs/heads/master/scripts/Makefile.dtbs)). Note: the GitHub "latest release" of `devicetree-org/dt-schema` shows v2022.08.1 because releases are no longer created there; tags go to v2026.09.
-- Without custom kernel builds, `opendap-os` can still: (1) check out the matching mainline tag (for `include/dt-bindings` and binding schemas), (2) compile the board DTS out of tree with `cpp` + `dtc -@`, (3) apply every overlay with `fdtoverlay` against every supported base DTB (catches overlays that reference missing labels), (4) run `dt-validate` on each merged result. Upstreaming the board DTS later makes this the kernel's own `dtbs_check`.
+- Without custom kernel builds, `blackbird-os` can still: (1) check out the matching mainline tag (for `include/dt-bindings` and binding schemas), (2) compile the board DTS out of tree with `cpp` + `dtc -@`, (3) apply every overlay with `fdtoverlay` against every supported base DTB (catches overlays that reference missing labels), (4) run `dt-validate` on each merged result. Upstreaming the board DTS later makes this the kernel's own `dtbs_check`.
 - **lopper** (devicetree-org, tag v1.6.0) can transform/prune DTs if the build ever needs per-domain DTs (e.g. Cortex-M7 side) — optional.
 
 ### 3.3 Hardware-in-the-loop
@@ -183,16 +183,16 @@ Prior art: Rust RFCs, Python PEPs, Kubernetes KEPs (one central `enhancements` r
 
 ### 4.3 Compatibility matrices
 
-The matrix *board rev × faceplate (variant, rev) × HAT-standard version × each HAT rev × OpenDAP OS version* explodes quickly; maintain it **derived, not hand-written**:
+The matrix *board rev × faceplate (variant, rev) × HAT-standard version × each HAT rev × Blackbird OS version* explodes quickly; maintain it **derived, not hand-written**:
 
 - Each hardware repository declares, per revision, which interface versions it **provides** or **requires** (`board rev B provides faceplate-interface 1.x, hat-standard 1.2`; `hat-radio rev A requires hat-standard >=1.1,<2`).
-- Each OpenDAP OS release declares which board revisions it supports and which overlays it ships.
+- Each Blackbird OS release declares which board revisions it supports and which overlays it ships.
 - A tool computes the matrix; HIL results mark tuples as *tested*, *expected* (semver-compatible but untested) or *incompatible*.
 - MNT Reform shows the artifact side of this: a single CI pipeline builds firmware per hardware revision with the revision in the file name (e.g. `reform2-lpc-fw/firmware-20_R3.bin`, `firmware-25_R2.bin`, `firmware-30_R1.bin`; keyboard firmware for keyboard-2/3/4 variants) ([`.gitlab-ci.yml`](https://source.mnt.re/reform/reform/-/raw/main/.gitlab-ci.yml)).
 
 ### 4.4 Release trains
 
-Hardware revisions are slow and expensive; OS and services are fast. Common practice: **time-based releases for software** (OpenDAP OS, system) and **milestone-based revisions for hardware**, joined by a **platform release** = a manifest of exact revisions that were integration-tested together (Zephyr LTS + `west` manifests; Yocto/kas; Android `repo` manifests). Each platform release publishes its compatibility rows.
+Hardware revisions are slow and expensive; OS and services are fast. Common practice: **time-based releases for software** (Blackbird OS, system) and **milestone-based revisions for hardware**, joined by a **platform release** = a manifest of exact revisions that were integration-tested together (Zephyr LTS + `west` manifests; Yocto/kas; Android `repo` manifests). Each platform release publishes its compatibility rows.
 
 ### 4.5 Dependency pinning between repositories
 
@@ -235,7 +235,7 @@ Typical gate sequence for open hardware with external contributors (no single so
 6. **Bring-up review** — bring-up checklist results, deviations become issues/ERRATA.
 7. **Release review** — compatibility rows updated, platform manifest tagged.
 
-Enforced with **CODEOWNERS** on interface paths (e.g. `hat-standard/spec/**` requires board + case + opendap-os owners), PR templates with the gate checklist, and labels for cross-repo changes.
+Enforced with **CODEOWNERS** on interface paths (e.g. `hat-standard/spec/**` requires board + case + blackbird-os owners), PR templates with the gate checklist, and labels for cross-repo changes.
 
 ### 6.2 Visual diffs in PRs
 
@@ -289,7 +289,7 @@ Generators (recommended home: `toolkit/crates/`, as host tools, per the toolkit 
 | KiCad connector symbols (via KiPart-style CSV or direct S-expression) + footprint parameters | `board`, faceplates, `hat-standard/reference-designs`, `hat-*` | Yes, vendored per consumer, with a header naming source file + version |
 | WireViz YAML → SVG of each flat cable (pin 1 orientation, contact side) | spec docs, `case` | Yes (SVG in docs) |
 | FreeCAD parameter spreadsheet (CSV/JSON importable into a Spreadsheet object that sketches reference by alias) | `case`, `case/hat-case`, faceplate and HAT cases | Yes |
-| DT fragments: connector nexus node (`gpio-map`), `gpio-line-names`, pinctrl groups per board rev, overlay skeletons per HAT/faceplate | `opendap-os` (board DTS + `overlays/`) | Yes |
+| DT fragments: connector nexus node (`gpio-map`), `gpio-line-names`, pinctrl groups per board rev, overlay skeletons per HAT/faceplate | `blackbird-os` (board DTS + `overlays/`) | Yes |
 | Rust crate with pin/bus constants and interface version | `board/firmware`, faceplate firmware, HAT firmware, `system` (names only) | Yes, or built in `build.rs` from a pinned spec release |
 | Markdown pin tables | spec `.md` files | Yes (between generated markers) |
 
@@ -303,7 +303,7 @@ CI jobs, each in the consuming repo, comparing *real* artifacts back to the R1 f
 |---|---|---|
 | `board`, faceplates, `hat-*`, `hat-standard/reference-designs` | ERC/DRC JSON clean; **connector-netlist conformance** (each connector pin's net matches the interface signal; reserved pins unconnected or as specified); requirement fields present on tagged parts | `kicad-cli` 10.0.x, kinparse or own parser; KiBot 1.9.x for outputs/diffs |
 | `case`, faceplate cases, HAT cases | **Fit check**: import the pinned board STEP release, intersection volume = 0, connector/pogo datums within tolerance of R1 | `FreeCADCmd` 1.1.x or CadQuery/build123d |
-| `opendap-os` | Build board DTS out of tree, apply **every** overlay to **every** supported base with `fdtoverlay`, `dt-validate` (dt-schema pinned) against bindings from the pinned mainline tag; overlay pin usage ⊆ interface file | dtc, fdtoverlay, dtschema 2026.x |
+| `blackbird-os` | Build board DTS out of tree, apply **every** overlay to **every** supported base with `fdtoverlay`, `dt-validate` (dt-schema pinned) against bindings from the pinned mainline tag; overlay pin usage ⊆ interface file | dtc, fdtoverlay, dtschema 2026.x |
 | firmware repos | Generated pin crate up to date; build for every supported board rev | cargo, probe-rs in HIL |
 | all | REUSE compliance; requirement-ID lint (R4) | `reuse` 6.x, toolkit linter |
 
@@ -317,10 +317,10 @@ CI jobs, each in the consuming repo, comparing *real* artifacts back to the R1 f
 ### R5. Version interfaces, declare compatibility, pin with a manifest
 
 - SemVer per interface spec as in §4.1; tags like `faceplate-interface-v0.3.0` in `case`, `v0.3.0` in `hat-standard`. A CI job classifies the diff of the interface file (pin moved = MAJOR, reserved→optional = MINOR, text = PATCH) and blocks under-bumped versions (Flipper-style).
-- Hardware repos declare `provides`/`requires` per revision in a small `compat.yaml`; `opendap-os` declares supported board revisions and shipped overlays; a toolkit command computes the compatibility matrix and marks tested tuples from HIL results.
+- Hardware repos declare `provides`/`requires` per revision in a small `compat.yaml`; `blackbird-os` declares supported board revisions and shipped overlays; a toolkit command computes the compatibility matrix and marks tested tuples from HIL results.
 - *(owner question)* How faceplates and HATs identify themselves (ID EEPROM à la HAT+, resistor strap, MCU-reported ID), since overlays must be chosen by the bootloader under BRD-001.
 - **Pinning**: interface specs are consumed as **versioned release artifacts** (R2 outputs bundled); the whole product is pinned by a **platform manifest** that extends the workspace `repos.tsv` with a revision column (or adopts `west`); git submodules only where a GUI tool needs a library path and a manifest is impractical.
-- **Release train**: time-based for `system`/`opendap-os`, milestone-based for hardware, joined by platform releases that publish manifest + compatibility rows.
+- **Release train**: time-based for `system`/`blackbird-os`, milestone-based for hardware, joined by platform releases that publish manifest + compatibility rows.
 
 ### R6. Cross-repo changes go through an RFC
 
@@ -331,7 +331,7 @@ CI jobs, each in the consuming repo, comparing *real* artifacts back to the R1 f
 ### R7. Early integration, staged by what exists
 
 1. **Now (no SoC chosen):** schema validation, generators + drift checks, KiCad ERC/DRC, DT compile + overlay apply + `dt-validate` against a placeholder/EVK base DTS, requirement lint.
-2. **After SoC selection:** QEMU (and/or Renode) boot of the OpenDAP OS image in CI with the generated DTB; Renode co-simulation of SoC + supervisor MCU firmware over the generated bus map (`dts2repl` from the same DT); Robot/pytest tests that later run unchanged on the bench.
+2. **After SoC selection:** QEMU (and/or Renode) boot of the Blackbird OS image in CI with the generated DTB; Renode co-simulation of SoC + supervisor MCU firmware over the generated bus map (`dts2repl` from the same DT); Robot/pytest tests that later run unchanged on the bench.
 3. **With first boards:** labgrid bench per hardware combination; bring-up checklists generated from the interface files; results feed the compatibility matrix and requirement verification.
 
 ### R8. Reviews
@@ -350,7 +350,7 @@ CI jobs, each in the consuming repo, comparing *real* artifacts back to the R1 f
 | `board` | Board KiCad, per-rev interface implementation mapping, MCU firmware | Connector libs, pin crate | ERC/DRC, netlist conformance, STEP export, firmware build per rev |
 | `faceplate-*` | Faceplate hardware/case/firmware | Faceplate connector lib, parameter spreadsheet, pin crate | Same as board + fit check |
 | `hat-*` | HAT hardware/case/firmware/software | HAT connector lib + design block, parameter spreadsheet, pin crate, overlay skeleton | Netlist conformance, fit check, overlay applies on all supported bases |
-| `opendap-os` | Board DTS, overlays, image | Generated DT fragments (pinned spec versions) | DT build, overlay apply matrix, `dt-validate`, emulator boot (post-SoC) |
+| `blackbird-os` | Board DTS, overlays, image | Generated DT fragments (pinned spec versions) | DT build, overlay apply matrix, `dt-validate`, emulator boot (post-SoC) |
 | `system` | Services, bus, SDK | Line names / interface constants | Tests against emulator (post-SoC) |
 | workspace / `.github` / `rfcs` *(owner question)* | Platform manifest, RFCs, compatibility rows | — | Integration CI over the manifest |
 
