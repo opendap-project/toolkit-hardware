@@ -24,3 +24,11 @@ path = "schemas/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 The OpenDAP Project"
 SPDX-License-Identifier = "MPL-2.0"
+
+# Schematic craft-check fixtures: copied from kicad-lib's examples/load-switch and its drawing
+# sheet (CERN-OHL-W-2.0), and derived from them by make_fixture.py.
+[[annotations]]
+path = ["tests/fixtures/craft-sch/good/**", "tests/fixtures/craft-sch/bad/**", "tests/fixtures/craft-sch/drawing-sheets/**", "tests/fixtures/craft-sch/bad.kicad_sym"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 The OpenDAP Project"
+SPDX-License-Identifier = "CERN-OHL-W-2.0"

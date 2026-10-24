@@ -1,24 +1,36 @@
 #!/bin/sh
-# Check a KiCad board against the OpenDAP PCB craft standard, by quality level.
+# Check a KiCad board, schematic or symbol library against the OpenDAP craft standard, by level.
 #
 # Usage: odapkit craft check [--json] [--config FILE] [--target Qn] [--no-drc] BOARD.kicad_pcb
+#        odapkit craft check [--json] [--config FILE] [--target Qn] [--no-erc] ROOT.kicad_sch
+#        odapkit craft check [--json] [--target Qn] LIBRARY.kicad_sym
 #
-# Runs tools/pcb-craft-check.py with KiCad's bundled Python (pcbnew): the checks DRC cannot do,
-# plus the board's own DRC folded in by level (unless --no-drc). Prints the results grouped by
-# level (RFC 0010) and the level the board reaches. Configuration: <project>.craft.toml next to
-# the board (target level, OSHWA UID, mirrored blocks); see the script's help for the format.
-# Standard: kicad-lib docs/specs/pcb-craft-standard.md. KiCad's Python is found through
-# $KICAD_PYTHON, then KiCad.app ($KICAD_APP, default /Applications/KiCad/KiCad.app).
+# A board runs tools/pcb-craft-check.py with KiCad's bundled Python (pcbnew), with its DRC folded
+# in (unless --no-drc). A schematic (the project's root sheet) or a symbol library runs
+# tools/sch-craft-check.py with python3 and kicad-cli, with the project's ERC folded in (unless
+# --no-erc). Results are grouped by level (RFC 0010) with the level reached. Configuration:
+# <project>.craft.toml next to the file; see each script's help for the format. Standard:
+# kicad-lib docs/specs/pcb-craft-standard.md. KiCad is found through $KICAD_PYTHON, then KiCad.app
+# ($KICAD_APP, default /Applications/KiCad/KiCad.app).
 #
 # Exit status: 0 every item at or below the target passes, 1 otherwise, 2 usage error.
 set -eu
 self="$(readlink -f "$0" 2>/dev/null || echo "$0")"
 here="$(cd "$(dirname "$self")/.." && pwd)"
 case "${1:-}" in
-  ""|-h|--help|help) sed -n '2,13p' "$self" | sed 's/^# \{0,1\}//'; [ -n "${1:-}" ] && exit 0 || exit 2 ;;
+  ""|-h|--help|help) sed -n '2,17p' "$self" | sed 's/^# \{0,1\}//'; [ -n "${1:-}" ] && exit 0 || exit 2 ;;
   check) shift ;;
-  *) echo "usage: odapkit craft check [--json] [--config FILE] [--target Qn] [--no-drc] BOARD.kicad_pcb" >&2; exit 2 ;;
+  *) echo "usage: odapkit craft check [--json] [--config FILE] [--target Qn] [--no-drc|--no-erc] FILE.kicad_pcb|.kicad_sch|.kicad_sym" >&2; exit 2 ;;
 esac
+# Schematics and symbol libraries: plain Python 3.9+ (tomllib from 3.11, else through python3).
+for a in "$@"; do
+  case "$a" in
+    *.kicad_sch|*.kicad_sym)
+      ODAPKIT_PYTHON3="${ODAPKIT_PYTHON3:-$(command -v python3 || echo python3)}"
+      export ODAPKIT_PYTHON3 KICAD_APP="${KICAD_APP:-/Applications/KiCad/KiCad.app}"
+      exec "$ODAPKIT_PYTHON3" "$here/tools/sch-craft-check.py" "$@" ;;
+  esac
+done
 app="${KICAD_APP:-/Applications/KiCad/KiCad.app}"
 py="${KICAD_PYTHON:-$app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3}"
 if [ ! -x "$py" ]; then
