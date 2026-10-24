@@ -10,3 +10,6 @@ tests/fixtures/sim/sim/results/
 
 # KiCad per-user settings
 *.kicad_prl
+
+# uv environments of tools/
+.venv/
