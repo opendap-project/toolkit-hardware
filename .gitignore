@@ -4,3 +4,6 @@
 # Rust
 target/
 __pycache__/
+
+# Test outputs
+tests/fixtures/sim/sim/results/

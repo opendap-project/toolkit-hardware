@@ -2,7 +2,9 @@
 """Fetch the external part files listed in libs/parts/manifest.toml into the local cache
 (~/.cache/opendap/parts/<manufacturer>/<mpn>/) and verify their sha256.
 
-  parts-sync.py [MANIFEST] [--json]
+  parts-sync.py [MANIFEST] [--json] [--mpn MPN]...
+
+--mpn limits the run to the entries of those parts (repeatable).
 
 Files without a sha256 in the manifest are downloaded and their hash is printed, so it can be
 recorded. Empty downloads, and datasheets that are not PDFs (a blocked or moved page), are
@@ -12,10 +14,17 @@ import hashlib, json, os, re, sys, tomllib, urllib.request
 
 def main(argv):
     as_json = "--json" in argv
-    args = [a for a in argv if not a.startswith("--")]
+    mpns, args, it = set(), [], iter(argv)
+    for a in it:
+        if a == "--mpn":
+            mpns.add(next(it, ""))
+        elif not a.startswith("--"):
+            args.append(a)
     here = os.path.dirname(os.path.abspath(__file__))
     manifest = args[0] if args else os.path.join(here, "..", "..", "..", "libs", "parts", "manifest.toml")
     files = tomllib.load(open(manifest, "rb")).get("file", [])
+    if mpns:
+        files = [f for f in files if f.get("mpn") in mpns]
     cache = os.path.join(os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache")), "opendap", "parts")
     results, ok = [], True
     for f in files:
