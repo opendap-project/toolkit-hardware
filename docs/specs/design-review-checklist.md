@@ -77,7 +77,7 @@
 | DRV-304 | Q1 | Does every signal via that changes reference layer have a ground stitching via within the class's distance, symmetric for pairs; and a stitching capacitor where the reference changes between ground and power? | Check output per via | IW-SR-03, IW-SR-04 |
 | DRV-305 | Q1 | Is the reference plane voided under SMD pads on fast pairs (AC capacitors, ESD parts, connector pads)? | Void list per pad | IW-HS-02 |
 | DRV-306 | Q1 | Do both members of each pair and every matched lane have the same via count? | Via count report | IW-HS-04 |
-| DRV-307 | Q1 | Do impedance, length and skew meet every net class? | `CHK` report (E4.5) | *T1:* PCB-I-01 to PCB-I-09 |
+| DRV-307 | Q1 | Do impedance, length and skew meet every net class? | `CHK` report (system plan HW2.4, was E4.5) | *T1:* PCB-I-01 to PCB-I-09 |
 | DRV-308 | Q1 | Is the master clock routed on an inner layer between ground planes, with spacing to other nets and no reference change (no unstitched guard trace counted as protection)? | Route screenshot and spacing | IW-CK-03, IW-SR-05; *T1:* PCB-I-09 |
 | DRV-309 | Q1 | Is the analog area free of digital and switching traces on every layer? | Keep-out DRC and screenshot | *T1:* PCB-A-07 |
 | DRV-310 | Q1 | Are the DAC references routed independently to each connector's ground pin? (*T1:* REFA/REFB) | Net routing | *T1:* PCB-A-03 |

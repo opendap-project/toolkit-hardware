@@ -24,7 +24,7 @@ Tests: `python3 -m unittest discover tests` (needs ngspice, uv, KiCad 10, and to
 - `tools/freecad-export.py` — STEP and other exports from FreeCAD
 - `tools/pcb-craft-check.py` — the craft check behind `odapkit craft`
 - `tools/parts-sync.py` — fetches the files listed in parts-lib's `manifest.toml` into `~/.cache/opendap/parts/` (`--mpn` for one part)
-- `docs/` — requirements, the component export contract and research
+- `docs/` — requirements, the component export contract, the shared engineering methods (integration and verification, PCB design constraints), the hardware engineering system plan and research
 
 ## License
 
