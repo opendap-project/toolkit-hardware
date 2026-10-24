@@ -7,3 +7,6 @@ __pycache__/
 
 # Test outputs
 tests/fixtures/sim/sim/results/
+
+# KiCad per-user settings
+*.kicad_prl
